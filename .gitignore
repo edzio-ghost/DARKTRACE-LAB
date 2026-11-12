@@ -1,0 +1,35 @@
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+
+# Large datasets and captures
+data/raw/
+data/pcap/
+data/processed/
+*.pcap
+*.pcapng
+*.csv
+*.zip
+
+# Generated alerts
+alerts/*.json
+
+# Streamlit
+.streamlit/secrets.toml
+
+# IDE and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
