@@ -1,0 +1,245 @@
+# DARKTRACE LAB
+
+**Network Intrusion Detection System | Python, TShark, Streamlit**
+
+DARKTRACE LAB is a personal cybersecurity project focused on network intrusion detection and traffic analysis.
+
+I started this project to gain hands-on experience with network security, understand how intrusion detection systems work, and apply the networking and programming concepts I have studied.
+
+The goal is to build a system capable of analyzing network traffic, identifying suspicious behavior, and presenting the results in a way that a security analyst can investigate.
+
+The project is currently under development. The first working version focuses on offline PCAP analysis, rule-based detection, alert correlation, and a web-based dashboard.
+
+## What the project does
+
+DARKTRACE LAB analyzes network captures using TShark and Python.
+
+Instead of examining thousands of packets manually in Wireshark, the system processes the traffic and looks for specific patterns that may indicate malicious activity.
+
+The current implementation focuses on two types of behavior.
+
+**Port scanning**
+
+The system monitors TCP SYN packets and identifies sources attempting to connect to multiple destination ports within a short period.
+
+This can indicate reconnaissance activity, where an attacker is trying to discover available services on a target system.
+
+**HTTP flooding**
+
+The system analyzes HTTP GET requests and looks for unusually high request volumes within a defined time window.
+
+This behavior can be associated with application-layer denial-of-service attacks.
+
+Both detectors generate alerts when their conditions are met.
+
+These alerts are then processed by a correlation module that groups related detections into incidents, reducing the number of individual notifications that need to be reviewed.
+
+## How it works
+
+The detection process follows five main stages:
+
+1. **Traffic collection:** The system reads an existing PCAP capture from the CIC-IDS2017 dataset.
+2. **Packet analysis:** TShark extracts the network information required by the detectors.
+3. **Threat detection:** Python scripts analyze traffic patterns using time windows and detection thresholds.
+4. **Alert correlation:** Related alerts are grouped according to their source, destination, detector, and timing.
+5. **Visualization:** The results are displayed in a Streamlit dashboard for further investigation.
+
+The current implementation works with recorded traffic rather than monitoring a live network.
+
+## SOC Dashboard
+
+I developed a web interface using Streamlit to make the detection results easier to explore.
+
+The dashboard provides an overview of the detected incidents and allows users to examine individual alerts.
+
+Its main features include:
+
+- Incident and alert statistics
+- Filtering by detection type and severity
+- Searching by IP address or incident identifier
+- Interactive charts showing recorded detection measurements
+- Detailed incident information
+- CSV and JSON exports
+- A button to execute the existing IDS analysis pipeline locally
+
+The dashboard is intended to provide a simple investigation interface rather than just displaying raw terminal output.
+
+## Testing and results
+
+For the initial implementation, I used network captures from the CIC-IDS2017 dataset, developed by the Canadian Institute for Cybersecurity.
+
+During testing with the Friday capture, the system processed approximately 353,000 TCP SYN packets and 135,000 HTTP GET requests.
+
+The analysis generated the following results:
+
+| Detection | Alerts | Consolidated incidents |
+|---|---:|---:|
+| Port scanning | 1 | 1 |
+| HTTP flooding | 19 | 1 |
+| Total | 20 | 2 |
+
+The PortScan detector observed a maximum of 999 distinct destination ports within a 60-second window.
+
+The HTTP Flood detector observed a maximum of 5,158 HTTP GET requests within a 60-second window.
+
+The 19 HTTP Flood alerts were grouped into one incident because they represented repeated detections during the same period of suspicious activity.
+
+These results demonstrate that the detection and correlation pipeline is working on the selected capture.
+
+However, they should not be interpreted as a measure of detection accuracy. Additional testing on independent captures is necessary to evaluate false positives, missed attacks, and the reliability of the detection thresholds.
+
+## Machine learning experiments
+
+Alongside the rule-based IDS, I have also been experimenting with machine learning for network traffic classification.
+
+I trained and evaluated Random Forest and Isolation Forest models using CIC-IDS2017 data.
+
+These experiments helped me explore feature selection, supervised classification, anomaly detection, and the challenges of applying trained models to traffic from different capture days.
+
+One important issue I encountered was model generalization: strong results on data from one capture did not necessarily translate into reliable predictions on other traffic.
+
+For this reason, the machine learning models are not currently part of the main IDS pipeline.
+
+My priority is to establish a reliable detection and evaluation process before integrating machine learning into the operational system.
+
+## Technologies used
+
+| Technology | Purpose |
+|---|---|
+| Python | Detection logic, traffic analysis, and alert processing |
+| TShark | Extracting network information from PCAP files |
+| Streamlit | Web-based SOC dashboard |
+| Pandas | Data processing and analysis |
+| Altair | Interactive visualizations |
+| Scikit-learn | Machine learning experiments |
+| Git and GitHub | Version control and project development |
+
+## Project structure
+
+```text
+DARKTRACE-LAB/
+|
+|-- dashboard/
+|   |-- app.py
+|
+|-- scripts/
+|   |-- detect_portscan_tshark.py
+|   |-- detect_http_flood.py
+|   |-- correlate_alerts.py
+|   |-- train_multiclass.py
+|   |-- ...
+|
+|-- models/
+|   |-- isolation_forest.pkl
+|   |-- isolation_forest_v2.pkl
+|   |-- random_forest_multiclass.pkl
+|   |-- random_forest_portscan.pkl
+|
+|-- data/
+|-- alerts/
+|-- main.py
+|-- requirements.txt
+|-- .gitignore
+|-- README.md
+```
+
+The `data` directory contains local datasets and captures, while the `alerts` directory stores generated analysis results.
+
+Large PCAP and dataset files are excluded from the Git repository.
+
+## Running the project
+
+### Requirements
+
+- Python 3.13
+- TShark (included with Wireshark)
+- Python dependencies listed in `requirements.txt`
+- The required CIC-IDS2017 PCAP capture
+
+### Installation
+
+Clone the repository:
+
+```bash
+git clone https://github.com/edzio-ghost/DARKTRACE-LAB.git
+cd DARKTRACE-LAB
+```
+
+Create and activate a virtual environment on Windows:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
+
+Install the dependencies:
+
+```powershell
+python -m pip install -r requirements.txt
+```
+
+Download the required network capture from the [CIC-IDS2017 dataset](https://www.unb.ca/cic/datasets/ids-2017.html).
+
+The current scripts use configured paths for the PCAP file and TShark executable. These paths may need to be adjusted for another computer.
+
+Run the detection pipeline:
+
+```powershell
+python main.py
+```
+
+Launch the dashboard:
+
+```powershell
+python -m streamlit run dashboard/app.py
+```
+
+The dashboard will normally be accessible at `http://localhost:8501`.
+
+## Current limitations
+
+DARKTRACE LAB is still an experimental project.
+
+At this stage, it has several limitations:
+
+- It analyzes recorded PCAP files rather than live traffic.
+- It currently supports two rule-based detection techniques.
+- Detection thresholds have not been validated across a sufficiently diverse set of captures.
+- The machine learning models are not integrated into the main detection pipeline.
+- The dashboard does not yet allow users to select arbitrary PCAP files.
+- The system does not block traffic or prevent attacks.
+
+These limitations are part of the ongoing development and testing process.
+
+## Next steps
+
+My current priorities are:
+
+1. Allow users to select different PCAP captures directly from the dashboard.
+2. Test the detectors on additional network captures and evaluate false positives.
+3. Improve the information available for investigating individual incidents.
+4. Add automated tests for the detection and correlation logic.
+5. Reevaluate the machine learning models using more reliable validation methods.
+6. Explore live network monitoring once the offline analysis pipeline is sufficiently stable.
+
+## About the project
+
+I am developing DARKTRACE LAB as part of my learning path in cybersecurity, with a particular interest in network security, intrusion detection, and penetration testing.
+
+The project gives me an opportunity to work with real network captures, understand detection logic, investigate technical limitations, and improve my ability to build security tools rather than only use existing ones.
+
+I plan to continue improving the system as I develop my skills.
+
+## Dataset
+
+The project uses CIC-IDS2017, published by the Canadian Institute for Cybersecurity.
+
+Dataset: https://www.unb.ca/cic/datasets/ids-2017.html
+
+The original dataset files are not included in this repository.
+
+---
+
+**Project status:** Work in progress  
+**Author:** edzio-ghost  
+**Repository:** https://github.com/edzio-ghost/DARKTRACE-LAB
